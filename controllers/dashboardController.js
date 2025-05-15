@@ -719,85 +719,6 @@ export const deleteMovieCollection = async (req, res) => {
   }
 };
 
-// export const getPopupPoster = async (req, res) => {
-//   try {
-//     const posters = await Assets.find({}, "posters");
-
-//     return res.status(200).send({
-//       status:"success",
-//       message:"Fetched successfully",
-//       popupPoster: posters[0].posters.popupPoster
-//     })
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       status:"fail",
-//       message:"Server Error!",
-//     })
-//   }
-// }
-
-// export const setPopupPoster = async (req, res) => {
-//   try {
-//     // Extract popupPoster from the request body
-//     const { popupPoster } = req.body;
-
-//     if (!popupPoster) {
-//       return res.status(400).json({
-//         status: "fail",
-//         message: "popupPoster is required!",
-//       });
-//     }
-
-//     // Find the first asset and update the popupPoster field
-//     const updatedAsset = await Assets.findOneAndUpdate(
-//       {},
-//       { $set: { "posters.popupPoster": popupPoster } },
-//       { new: true } // Return the updated document
-//     );
-
-//     if (!updatedAsset) {
-//       return res.status(404).json({
-//         status: "fail",
-//         message: "No assets found to update!",
-//       });
-//     }
-
-//     // Respond with the updated asset
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Popup poster updated successfully!",
-//       data: updatedAsset,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       status:"fail",
-//       message:"Server Error!",
-//     })
-//   }
-// }
-
-// export const getMoviePoster = async (req, res) => {
-//   try {
-//     const posters = await Assets.find({}, "posters");
-
-//     return res.status(200).send({
-//       status:"success",
-//       message:"Fetched successfully",
-//       moviePoster: posters[0].posters.moviePoster
-//     })
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       status:"fail",
-//       message:"Server Error!",
-//     })
-//   }
-// }
-
-// export const setMoviePoster = async (req, res) => {}
-
 export const getPopupPoster = async (req, res) => {
   try {
     const assets = await Assets.find({}, "posters");
@@ -917,6 +838,413 @@ export const setMoviePoster = async (req, res) => {
       status: "success",
       message: "Movie poster updated successfully!",
       data: updatedAsset.posters.moviePoster,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const getNavbarAd = async (req, res) => {
+  try {
+    const assets = await Assets.find({}, "posters");
+
+    if (!assets || assets?.length === 0) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    const { navbarAd } = assets[0].posters;
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      navbarAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setNavbarAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'image' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "posters.navbarAd": { img, link } } },
+      { new: true }
+    );
+
+    if (!updatedAsset) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found to update!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Ad updated successfully!",
+      data: updatedAsset?.posters?.navbarAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+// Getter and Setter for Home Long Ad
+export const getHomeLongAd = async (req, res) => {
+  try {
+    const assets = await Assets.findOne({}, "ads.homeLongAd");
+
+    if (!assets) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      homeLongAd: assets.ads?.homeLongAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setHomeLongAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'img' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "ads.homeLongAd": { img, link } } },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Home Long Ad updated successfully!",
+      data: updatedAsset.ads?.homeLongAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+// Getter and Setter for Home Short Ad
+export const getHomeShortAd = async (req, res) => {
+  try {
+    const assets = await Assets.findOne({}, "ads.homeShortAd");
+
+    if (!assets) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      homeShortAd: assets.ads?.homeShortAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setHomeShortAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'img' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "ads.homeShortAd": { img, link } } },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Home Short Ad updated successfully!",
+      data: updatedAsset.ads?.homeShortAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+// Getter and Setter for Category Long Ad
+export const getCategoryLongAd = async (req, res) => {
+  try {
+    const assets = await Assets.findOne({}, "ads.categoryLongAd");
+
+    if (!assets) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      categoryLongAd: assets.ads?.categoryLongAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setCategoryLongAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'img' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "ads.categoryLongAd": { img, link } } },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Category Long Ad updated successfully!",
+      data: updatedAsset.ads?.categoryLongAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+// Getter and Setter for Category Short Ad
+export const getCategoryShortAd = async (req, res) => {
+  try {
+    const assets = await Assets.findOne({}, "ads.categoryShortAd");
+
+    if (!assets) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      categoryShortAd: assets.ads?.categoryShortAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setCategoryShortAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'img' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "ads.categoryShortAd": { img, link } } },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Category Short Ad updated successfully!",
+      data: updatedAsset.ads?.categoryShortAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+// Getter and Setter for News Long Ad
+export const getNewsLongAd = async (req, res) => {
+  try {
+    const assets = await Assets.findOne({}, "ads.newsLongAd");
+
+    if (!assets) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      newsLongAd: assets.ads?.newsLongAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setNewsLongAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'img' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "ads.newsLongAd": { img, link } } },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "News Long Ad updated successfully!",
+      data: updatedAsset.ads?.newsLongAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+// Getter and Setter for News Short Ad
+export const getNewsShortAd = async (req, res) => {
+  try {
+    const assets = await Assets.findOne({}, "ads.newsShortAd");
+
+    if (!assets) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No assets found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched successfully",
+      newsShortAd: assets.ads?.newsShortAd,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Server Error!",
+    });
+  }
+};
+
+export const setNewsShortAd = async (req, res) => {
+  try {
+    const { img, link } = req.body;
+
+    if (!img || !link) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both 'img' and 'link' are required!",
+      });
+    }
+
+    const updatedAsset = await Assets.findOneAndUpdate(
+      {},
+      { $set: { "ads.newsShortAd": { img, link } } },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "News Short Ad updated successfully!",
+      data: updatedAsset.ads?.newsShortAd,
     });
   } catch (error) {
     console.error(error);

@@ -6,18 +6,32 @@ import {
   deleteMovieRelease,
   editMovieCollection,
   editMovieRelease,
+  getCategoryLongAd,
+  getCategoryShortAd,
   getDashboardData,
   getFilesLinks,
   getHomeGrid,
+  getHomeLongAd,
+  getHomeShortAd,
   getMovieCollections,
   getMoviePoster,
   getMovieReleases,
+  getNavbarAd,
+  getNewsLongAd,
+  getNewsShortAd,
   getPopupPoster,
   getTopNine,
   getTrends,
+  setCategoryLongAd,
+  setCategoryShortAd,
   setFilesLink,
   setHomeGrid,
+  setHomeLongAd,
+  setHomeShortAd,
   setMoviePoster,
+  setNavbarAd,
+  setNewsLongAd,
+  setNewsShortAd,
   setPopupPoster,
   setTopNine,
   setTrends,
@@ -35,11 +49,29 @@ router.get("/get-trends", getTrends);
 router.get("/get-files-links", getFilesLinks);
 router.get("/get-movie-releases", getMovieReleases);
 router.get("/get-movie-collections", getMovieCollections);
-router.get("/get-popup-poster", getPopupPoster);
-router.get("/get-movie-poster", getMoviePoster);
 
+/*=== Ads & Posters ===*/
+router.get("/get-popup-poster", getPopupPoster);
 router.post("/set-popup-poster", setPopupPoster);
+router.get("/get-movie-poster", getMoviePoster);
 router.post("/set-movie-poster", setMoviePoster);
+router.get("/get-navbar-ad", getNavbarAd);
+router.post("/set-navbar-ad", setNavbarAd);
+// Home Ads
+router.get("/get-home-long-ad", getHomeLongAd);
+router.post("/set-home-long-ad", setHomeLongAd);
+router.get("/get-home-short-ad", getHomeShortAd);
+router.post("/set-home-short-ad", setHomeShortAd);
+// Category Ads
+router.get("/get-category-long-ad", getCategoryLongAd);
+router.post("/set-category-long-ad", setCategoryLongAd);
+router.get("/get-category-short-ad", getCategoryShortAd);
+router.post("/set-category-short-ad", setCategoryShortAd);
+// News Ads
+router.get("/get-news-long-ad", getNewsLongAd);
+router.post("/set-news-long-ad", setNewsLongAd);
+router.get("/get-news-short-ad", getNewsShortAd);
+router.post("/set-news-short-ad", setNewsShortAd);
 
 router.put("/edit-movie-release", userAuth, editMovieRelease);
 router.put("/edit-movie-collection", userAuth, editMovieCollection);

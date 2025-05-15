@@ -101,6 +101,102 @@ const assetsSchema = new mongoose.Schema(
           default: "",
         },
       },
+      navbarAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+      },
+    },
+    ads: {
+      homeLongAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+      homeShortAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+      categoryLongAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+      categoryShortAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+      newsLongAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+      newsShortAd: {
+        img: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
     },
     movieCollections: {
       type: Array,
