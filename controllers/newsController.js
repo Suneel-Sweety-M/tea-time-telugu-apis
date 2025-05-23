@@ -41,8 +41,8 @@ export const addNews = async (req, res) => {
     const currentUser = await Users.findById(user?._id);
 
     if (
-      (currentUser.role === "admin" || currentUser.role === "writer") &&
-      currentUser.isActive === false
+      (currentUser?.role === "admin" || currentUser?.role === "writer") &&
+      currentUser?.isActive === false
     ) {
       return res.status(404).send({
         status: "fail",
