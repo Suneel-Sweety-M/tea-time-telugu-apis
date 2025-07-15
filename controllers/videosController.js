@@ -1,3 +1,4 @@
+import { generateUniqueSlug } from "../middlewares/slugGenerator.js";
 import Assets from "../models/assetsModel.js";
 import Users from "../models/userModel.js";
 import Videos from "../models/videoModel.js";
@@ -29,12 +30,16 @@ export const addVideo = async (req, res) => {
       });
     }
 
+    // Generate unique newsId from title
+    const newsId = await generateUniqueSlug(Videos, title);
+
     const newVideo = new Videos({
       postedBy: user?._id,
       title,
       videoUrl: `https://www.youtube.com/embed/${ytId}`,
       mainUrl: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
       subCategory,
+      newsId,
     });
 
     await newVideo.save();
@@ -109,6 +114,49 @@ export const getCategoryVideos = async (req, res) => {
   }
 };
 
+export const getPaginatedCategoryVideos = async (req, res) => {
+  try {
+    let { category, subCategory, skip = 0, limit = 9 } = req.query;
+    skip = Number(skip);
+    limit = Number(limit);
+
+    const filter = {};
+    if (category) filter.category = category;
+
+    // Handle subCategory
+    if (subCategory) {
+      if (subCategory === "latestVideos") {
+        // latestVideos means no subCategory
+        filter.category = "videos";
+        filter.$or = [
+          { subCategory: { $exists: false } },
+          { subCategory: { $eq: "" } },
+        ];
+      } else {
+        filter.subCategory = subCategory; // must match DB exactly
+      }
+    }
+
+    const videos = await Videos.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Videos.countDocuments(filter);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        videos,
+        total,
+      },
+    });
+  } catch (error) {
+    console.error("getPaginatedCategoryVideos error:", error);
+    return res.status(500).json({ message: "Failed to fetch videos." });
+  }
+};
+
 export const getVideo = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -170,6 +218,81 @@ export const getVideo = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Failed to fetch videos." });
+  }
+};
+
+export const getVideoByNewsId = async (req, res) => {
+  try {
+    const { newsId } = req.params;
+
+    if (!newsId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "newsId parameter is required",
+      });
+    }
+
+    // Fetch the main video by newsId
+    const video = await Videos.findOne({ newsId });
+
+    if (!video) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Video not found",
+      });
+    }
+
+    // Step 1: Extract potential keywords from the title
+    const keywords =
+      video.title.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g) || [];
+
+    // Create regex pattern for matching (if keywords exist)
+    const keywordPattern = keywords.length > 0 ? keywords.join("|") : null;
+
+    // Step 2: Find similar posts based on keyword pattern
+    const similarPosts = keywordPattern
+      ? await Videos.find({
+          newsId: { $ne: newsId }, // Exclude current video by newsId
+          title: { $regex: keywordPattern, $options: "i" },
+        }).limit(6)
+      : [];
+
+    // Step 3: Find related posts by subCategory
+    const relatedPosts = await Videos.find({
+      newsId: { $ne: newsId },
+      subCategory: video.subCategory,
+    }).limit(6);
+
+    // Suggested posts (newest first)
+    const suggestedPosts = await Videos.find({
+      newsId: { $ne: newsId },
+    })
+      .sort({ createdAt: -1 })
+      .limit(6);
+
+    // Video songs content
+    const videoSongs = await Videos.find({
+      newsId: { $ne: newsId },
+      subCategory: { $in: ["video songs", "lyrical videos"] },
+    }).limit(6);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Video content fetched successfully",
+      data: {
+        video,
+        similarPosts,
+        relatedPosts,
+        suggestedPosts,
+        videoSongs,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getVideoByNewsId:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "An error occurred while fetching video content",
+    });
   }
 };
 

@@ -300,6 +300,15 @@ export const updateDetails = async (req, res) => {
       });
     }
 
+    const userExist = await Users.findOne({ email });
+
+    if (userExist) {
+      return res.status(404).json({
+        status: "fail",
+        message: "User already exists with this email.",
+      });
+    }
+
     const updateData = {};
     if (fullName) updateData.fullName = fullName;
     if (email) updateData.email = email;
@@ -361,6 +370,15 @@ export const updateUserDetails = async (req, res) => {
       return res.status(400).send({
         status: "fail",
         message: "No data to update",
+      });
+    }
+
+    const userExist = await Users.findOne({ email });
+
+    if (userExist) {
+      return res.status(404).json({
+        status: "fail",
+        message: "User already exists with this email.",
       });
     }
 

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  adminForgotPassword,
   googleCallback,
   joinWithGoogle,
   login,
@@ -7,8 +8,10 @@ import {
   refreshToken,
   register,
   registerByAdmin,
+  resetAdminPassword,
   resetPassword,
   resetUserPassword,
+  writerForgotPassword,
 } from "../controllers/authController.js";
 import userAuth from "../middlewares/verifyUser.js";
 
@@ -19,6 +22,10 @@ router.get("/google/callback", googleCallback);
 
 router.post("/register", register);
 router.post("/login", login);
+
+router.post("/admin/forgot-password", adminForgotPassword);
+router.post("/writer/forgot-password", writerForgotPassword);
+router.post("/admin/reset-password/:token", resetAdminPassword);
 
 router.post("/register-by-admin", userAuth, registerByAdmin);
 router.post("/change-password", userAuth, resetPassword);

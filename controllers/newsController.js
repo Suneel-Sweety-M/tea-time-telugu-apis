@@ -5,6 +5,8 @@ import { uploadFile } from "../services/s3Services.js";
 import Users from "../models/userModel.js";
 import Assets from "../models/assetsModel.js";
 import { sendNewsAddedEmail } from "../services/mails.js";
+import { generateUniqueSlug } from "../middlewares/slugGenerator.js";
+import Videos from "../models/videoModel.js";
 
 export const addNews = async (req, res) => {
   try {
@@ -53,9 +55,13 @@ export const addNews = async (req, res) => {
     const uploadResult = await uploadFile(req.file);
     const mainUrl = uploadResult.Location;
 
+    // Generate unique newsId from title
+    const newsId = await generateUniqueSlug(News, title);
+
     const newPost = new News({
       postedBy: user?._id,
       title,
+      newsId,
       mainUrl,
       description,
       category,
@@ -162,6 +168,57 @@ export const getNewsById = async (req, res) => {
   }
 };
 
+export const getNewsByNewsId = async (req, res) => {
+  try {
+    const { newsId } = req.params;
+
+    if (!newsId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "newsId parameter is required",
+      });
+    }
+
+    const post = await News.findOne({ newsId })
+      .populate("postedBy", "fullName profileUrl")
+      .exec();
+
+    if (!post) {
+      return res.status(404).json({
+        status: "fail",
+        message: "News not found",
+      });
+    }
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const suggestedNews = await News.aggregate([
+      {
+        $match: {
+          newsId: { $ne: newsId }, // Changed to use newsId instead of _id
+          createdAt: { $gte: oneWeekAgo },
+        },
+      },
+      { $sample: { size: 20 } },
+    ]);
+
+    return res.status(200).json({
+      status: "success",
+      message: "News fetched successfully",
+      news: post,
+      suggestedNews,
+    });
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "An error occurred while fetching the news",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 export const getFilteredNews = async (req, res) => {
   const { category, subcategory } = req.query;
   let filter = {};
@@ -190,65 +247,219 @@ export const getFilteredNews = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+ 
+export const getCategoryNews = async (req, res) => {
+  const { category, subcategory, page = 1, limit = 12 } = req.query;
+  let filter = {};
 
-export const getSearchedNews = async (req, res) => {
+  if (category) {
+    filter.category = category;
+  }
+
+  if (subcategory) {
+    filter.subCategory = subcategory;
+  }
+
   try {
-    const searchTerm = req.query.q;
+    const total = await News.countDocuments(filter);
+    const news = await News.find(filter)
+      .populate("postedBy", "fullName profileUrl")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .exec();
 
-    if (!searchTerm) {
-      return res
-        .status(400)
-        .json({ status: "fail", message: "Search term is required." });
-    }
-
-    const newsResults = await News.find({
-      $or: [
-        { title: { $regex: searchTerm, $options: "i" } },
-        { description: { $regex: searchTerm, $options: "i" } },
-      ],
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched News successfully",
+      news,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
     });
-
-    // Fetch gallery items matching the search term from the Gallery model
-    const galleryResults = await Gallery.find({
-      $or: [
-        { name: { $regex: searchTerm, $options: "i" } },
-        { title: { $regex: searchTerm, $options: "i" } },
-        { description: { $regex: searchTerm, $options: "i" } },
-      ],
-    });
-
-    // Initialize an object to store categories
-    const categorizedResults = {
-      news: [],
-      politics: [],
-      movies: [],
-      videos: [],
-      gallery: [],
-      ott: [],
-      shows: [],
-      collections: [],
-      reviews: [],
-      gossips: [],
-    };
-
-    // Sort News model results into categories
-    newsResults.forEach((article) => {
-      const category = article.category.toLowerCase();
-      if (categorizedResults[category]) {
-        categorizedResults[category].push(article);
-      }
-    });
-
-    // Add gallery results to the "gallery" category
-    categorizedResults.gallery = galleryResults;
-
-    // Return categorized news results with gallery items
-    return res
-      .status(200)
-      .json({ status: "success", data: categorizedResults });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+// export const getSearchedNews = async (req, res) => {
+//   try {
+//     const searchTerm = req.query.q;
+
+//     if (!searchTerm) {
+//       return res
+//         .status(400)
+//         .json({ status: "fail", message: "Search term is required." });
+//     }
+
+//     const newsResults = await News.find({
+//       $or: [
+//         { title: { $regex: searchTerm, $options: "i" } },
+//         { description: { $regex: searchTerm, $options: "i" } },
+//       ],
+//     });
+
+//     // Fetch gallery items matching the search term from the Gallery model
+//     const galleryResults = await Gallery.find({
+//       $or: [
+//         { name: { $regex: searchTerm, $options: "i" } },
+//         { title: { $regex: searchTerm, $options: "i" } },
+//         { description: { $regex: searchTerm, $options: "i" } },
+//       ],
+//     });
+
+//     // Fetch gallery items matching the search term from the Gallery model
+//     const videoResults = await Videos.find({
+//       $or: [
+//         { title: { $regex: searchTerm, $options: "i" } },
+//         { description: { $regex: searchTerm, $options: "i" } },
+//       ],
+//     });
+
+//     // Initialize an object to store categories
+//     const categorizedResults = {
+//       news: [],
+//       politics: [],
+//       movies: [],
+//       videos: [],
+//       gallery: [],
+//       ott: [],
+//       shows: [],
+//       collections: [],
+//       reviews: [],
+//       gossips: [],
+//     };
+
+//     // Sort News model results into categories
+//     newsResults.forEach((article) => {
+//       const category = article.category.toLowerCase();
+//       if (categorizedResults[category]) {
+//         categorizedResults[category].push(article);
+//       }
+//     });
+
+//     // Add gallery results to the "gallery" category
+//     categorizedResults.gallery = galleryResults;
+//     categorizedResults.videos = videoResults;
+
+//     // Return categorized news results with gallery items
+//     return res
+//       .status(200)
+//       .json({ status: "success", data: categorizedResults });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ status: "fail", message: error.message });
+//   }
+// };
+
+// newsController.js
+// newsController.js
+export const getSearchedNews = async (req, res) => {
+  try {
+    const searchTerm = req.query.q;
+    const skip = Number(req.query.skip) || 0;
+    const limit = Number(req.query.limit) || 9;
+
+    if (!searchTerm) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Search term is required.",
+      });
+    }
+
+    // Fetch News items
+    const allNews = await News.find({
+      $or: [
+        { title: { $regex: searchTerm, $options: "i" } },
+        { description: { $regex: searchTerm, $options: "i" } },
+      ],
+    }).sort({ createdAt: -1 });
+
+    // Split into categories
+    const categories = [
+      "news",
+      "politics",
+      "movies",
+      "ott",
+      "gossips",
+      "reviews",
+      "collections",
+      "shows",
+    ];
+    const categorizedNews = {};
+    categories.forEach((c) => {
+      categorizedNews[c] = [];
+    });
+
+    allNews.forEach((article) => {
+      const cat = article.category?.toLowerCase() || "news";
+      if (categorizedNews[cat]) {
+        categorizedNews[cat].push(article);
+      } else {
+        categorizedNews.news.push(article); // default
+      }
+    });
+
+    // Paginate each category
+    const paginatedNews = {};
+    categories.forEach((cat) => {
+      const total = categorizedNews[cat].length;
+      const items = categorizedNews[cat].slice(skip, skip + limit);
+      paginatedNews[cat] = { items, total };
+    });
+
+    // Fetch gallery and videos with pagination
+    const [galleryResults, videoResults, galleryCount, videoCount] =
+      await Promise.all([
+        Gallery.find({
+          $or: [
+            { name: { $regex: searchTerm, $options: "i" } },
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Videos.find({
+          $or: [
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Gallery.countDocuments({
+          $or: [
+            { name: { $regex: searchTerm, $options: "i" } },
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        }),
+        Videos.countDocuments({
+          $or: [
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        }),
+      ]);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        ...paginatedNews,
+        gallery: { items: galleryResults, total: galleryCount },
+        videos: { items: videoResults, total: videoCount },
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: error.message,
+    });
   }
 };
 
@@ -312,6 +523,10 @@ export const editNews = async (req, res) => {
     newsToEdit.category = category;
     newsToEdit.subCategory = subCategory;
     newsToEdit.tags = tags;
+
+    if (title) {
+      newsToEdit.newsId = await generateUniqueSlug(News, title, id);
+    }
 
     await newsToEdit.save();
 

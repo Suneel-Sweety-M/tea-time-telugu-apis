@@ -1,3 +1,4 @@
+import { generateUniqueSlug } from "../middlewares/slugGenerator.js";
 import Gallery from "../models/galleryModel.js";
 import Users from "../models/userModel.js";
 import { uploadFile } from "../services/s3Services.js";
@@ -54,6 +55,9 @@ export const addGallery = async (req, res) => {
       });
     }
 
+    // Generate unique newsId from title
+    const newsId = await generateUniqueSlug(Gallery, title);
+
     const newPost = new Gallery({
       postedBy: user?._id,
       title,
@@ -61,6 +65,7 @@ export const addGallery = async (req, res) => {
       description,
       category,
       galleryPics,
+      newsId,
     });
 
     await newPost.save();
@@ -86,6 +91,32 @@ export const getGallery = async (req, res) => {
       status: "success",
       message: "Fetched gallery",
       gallery: posts,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const getGalleryPosts = async (req, res) => {
+  try {
+    const { page = 1, limit = 12 } = req.query;
+
+    const total = await Gallery.countDocuments();
+    const posts = await Gallery.find()
+      .populate("postedBy", "fullName profileUrl")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .exec();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched gallery",
+      gallery: posts,
+      total,
+      page: Number(page),
+      lastPage: Math.ceil(total / limit),
     });
   } catch (error) {
     console.log(error);
@@ -202,6 +233,49 @@ export const getGalleryById = async (req, res) => {
   }
 };
 
+export const getGalleryBynewsId = async (req, res) => {
+  try {
+    const { newsId } = req.params;
+
+    if (!newsId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "newsId parameter is required",
+      });
+    }
+
+    const post = await Gallery.findOne({ newsId })
+      .populate("postedBy", "fullName profileUrl")
+      .exec();
+
+    if (!post) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Gallery post not found",
+      });
+    }
+
+    const suggestedPosts = await Gallery.find({
+      newsId: { $ne: newsId }, // Changed from _id to newsId
+    })
+      .sort({ createdAt: -1 })
+      .limit(16);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Gallery post fetched successfully",
+      gallery: post,
+      suggestedPosts,
+    });
+  } catch (error) {
+    console.error("Error fetching gallery post:", error);
+    return res.status(500).json({
+      status: "fail",
+      message: "An error occurred while fetching the gallery post",
+    });
+  }
+};
+
 export const fileLink = async (req, res) => {
   try {
     const { title, name, description, category } = req.body;
@@ -256,6 +330,10 @@ export const editGallery = async (req, res) => {
     gallery.name = name;
     gallery.description = description;
     gallery.category = category;
+
+    if (title) {
+      gallery.newsId = await generateUniqueSlug(Gallery, title, id);
+    }
 
     await gallery.save();
 

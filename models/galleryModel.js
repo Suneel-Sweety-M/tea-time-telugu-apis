@@ -14,6 +14,11 @@ const gallerySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    newsId: {
+      type: String,
+      unique: true,
+      index: true,
+    },
     mainUrl: {
       type: String,
     },

@@ -10,6 +10,11 @@ const videoSchema = new mongoose.Schema(
       type: String,
       required: [true, "First Name is Required!"],
     },
+    newsId: {
+      type: String,
+      unique: true,
+      index: true,
+    },
     mainUrl: {
       type: String,
     },

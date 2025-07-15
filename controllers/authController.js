@@ -7,6 +7,9 @@ import {
 } from "../middlewares/jwt.js";
 import Users from "../models/userModel.js";
 import passport from "passport";
+import nodemailer from "nodemailer";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 export const register = async (req, res) => {
   const { fullName, email, password, role } = req.body;
@@ -367,5 +370,210 @@ export const resetUserPassword = async (req, res) => {
     return res
       .status(501)
       .send({ status: "fail", message: "Password reset error!", error });
+  }
+};
+
+
+export const adminForgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).send({
+        status: "fail",
+        message: "Please provide an email address.",
+      });
+    }
+
+    const user = await Users.findOne({ email });
+
+    if (!user) {
+      return res.status(404).send({
+        status: "fail",
+        message: "User not found with this email.",
+      });
+    }
+
+    if (user?.role !== "admin") {
+      return res.status(404).send({
+        status: "fail",
+        message: "You are not an admin!",
+      });
+    }
+
+    // Here you would typically send a reset password link to the user's email
+    // 🔐 Generate token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpiry = Date.now() + 60 * 60 * 1000; // 1 hour
+
+    // 🧠 Store in DB
+    user.resetToken = resetToken;
+    user.resetTokenExpires = tokenExpiry;
+    await user.save();
+
+    // 🔗 Reset URL
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    // 📧 Send email
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      auth: {
+        user: process.env.AUTH_EMAIL,
+        pass: process.env.AUTH_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Tea Time Telugu Support" <${process.env.AUTH_EMAIL}>`,
+      to: email,
+      subject: "Password Reset Link",
+      html: `<p>Hi ${user.fullName},</p>
+             <p>Click the link below to reset your password:</p>
+             <a href="${resetUrl}">${resetUrl}</a>
+             <p>This link will expire in 1 hour.</p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    // Note: In a real application, you would handle errors from the email service
+    // and possibly log them or notify the user if the email failed to send.
+
+    // For simplicity, we will just return a success message
+    return res.status(200).send({
+      status: "success",
+      message: "Reset password link sent to your email.",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      status: "fail",
+      message: "Server error while processing forgot password request.",
+    });
+  }
+};
+
+export const writerForgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).send({
+        status: "fail",
+        message: "Please provide an email address.",
+      });
+    }
+
+    const user = await Users.findOne({ email });
+
+    if (!user) {
+      return res.status(404).send({
+        status: "fail",
+        message: "User not found with this email.",
+      });
+    }
+
+    if (user?.role !== "writer") {
+      return res.status(404).send({
+        status: "fail",
+        message: "You are not a writer!",
+      });
+    }
+
+    const adminsMails = await Users.find({ role: "admin" }, "email");
+    if (adminsMails.length === 0) {
+      return res.status(404).send({
+        status: "fail",
+        message: "No admin found to handle this request.",
+      });
+    }
+
+    // Send email to admin
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.AUTH_EMAIL,
+        pass: process.env.AUTH_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Tea Time Telugu Notification" <${process.env.AUTH_EMAIL}>`,
+      to: adminsMails.map((admin) => admin.email).join(", "), // comma-separated list of admins
+      subject: "Writer Password Reset Request",
+      html: `<p><strong>Writer Name:</strong> ${user?.fullName}</p>
+             <p><strong>Writer Email:</strong> ${email}</p>
+             <p>This writer has requested to reset their password. Please take necessary action.</p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).send({
+      status: "success",
+      message:
+        "Your request has been sent to the admin. You will be contacted shortly.",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      status: "fail",
+      message: "Server error while processing forgot password request.",
+    });
+  }
+};
+
+export const resetAdminPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    // Validate inputs
+    if (!token || !password) {
+      return res.status(400).send({
+        status: "fail",
+        message: "Token and new password are required.",
+      });
+    }
+
+    // Find user by token and check if it's still valid
+    const user = await Users.findOne({
+      resetToken: token,
+      resetTokenExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).send({
+        status: "fail",
+        message: "Invalid or expired reset token.",
+      });
+    }
+
+    if (user.role !== "admin") {
+      return res.status(403).send({
+        status: "fail",
+        message: "You are not admin to reset this password.",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update user's password and clear reset token fields
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpires = undefined;
+
+    await user.save();
+
+    return res.status(200).send({
+      status: "success",
+      message: "Password has been reset successfully.",
+    });
+  } catch (error) {
+    console.error("Reset Error:", error);
+    return res.status(500).send({
+      status: "fail",
+      message: "Something went wrong while resetting the password.",
+    });
   }
 };

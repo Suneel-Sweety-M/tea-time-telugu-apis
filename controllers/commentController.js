@@ -43,6 +43,52 @@ export const getComments = async (req, res) => {
   }
 };
 
+export const getNewsComments = async (req, res) => {
+  try {
+    const { newsId } = req.params;
+    const { directCommentsLimit, replyCommentsLimit, directCommentsSkip } = req.query;
+
+    if (!newsId) {
+      return res.status(400).send({
+        status: "fail",
+        message: "Post id not found!",
+      });
+    }
+
+    const comments = await Comments.find({ newsId, parentComment: { $exists: false } })
+      .skip(parseInt(directCommentsSkip) || 0)
+      .limit(parseInt(directCommentsLimit) || 4)
+      .populate("postedBy", "fullName profileUrl")
+      .populate({
+        path: "replies",
+        options: {
+          limit: parseInt(replyCommentsLimit) || 4,
+          sort: { createdAt: -1 }
+        },
+        populate: {
+          path: "postedBy",
+          select: "fullName profileUrl",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    const totalCommentsCount = await Comments.countDocuments({ newsId, parentComment: { $exists: false } });
+
+    return res.status(200).send({
+      status: "success",
+      message: "Comments fetched successfully",
+      comments,
+      totalCommentsCount
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
+
 export const addReaction = async (req, res) => {
   try {
     const { newsId } = req.params;

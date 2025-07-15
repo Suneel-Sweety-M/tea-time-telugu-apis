@@ -6,7 +6,9 @@ import {
   editGallery,
   getGallery,
   getGalleryById,
+  getGalleryBynewsId,
   getGalleryByQuery,
+  getGalleryPosts,
 } from "../controllers/galleryController.js";
 import userAuth from "../middlewares/verifyUser.js";
 
@@ -14,8 +16,10 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/", getGallery);
+router.get("/posts", getGalleryPosts);
 router.get("/search", getGalleryByQuery);
 router.get("/:postId", getGalleryById);
+router.get("/g/:newsId", getGalleryBynewsId);
 
 router.put("/:id/edit", userAuth, editGallery);
 
