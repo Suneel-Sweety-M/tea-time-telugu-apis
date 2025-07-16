@@ -84,8 +84,10 @@ export const googleCallback = (req, res) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      // secure: process.env.NODE_ENV === "production",
+      secure: true, // For testing purposes, set to true
+      sameSite: "None",
+      // sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -190,8 +192,9 @@ export const login = async (req, res) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      // secure: process.env.NODE_ENV === "production",
+      secure: true, // For testing purposes, set to true
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
