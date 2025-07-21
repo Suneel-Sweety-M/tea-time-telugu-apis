@@ -86,7 +86,7 @@ export const addNews = async (req, res) => {
         category: category,
         imgSrc: mainUrl,
         newsTitle: title,
-        postLink: `${process.env.CLIENT_URL}/${newPost?.category}/${newPost?._id}`,
+        postLink: `${process.env.CLIENT_URL}/${newPost?.category}/${newPost?.newsId}`,
       });
     });
 
