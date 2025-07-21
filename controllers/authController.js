@@ -214,8 +214,10 @@ export const login = async (req, res) => {
 export const logout = (req, res) => {
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    // secure: process.env.NODE_ENV === "production",
+    // sameSite: "Strict",
+    secure: true, // For testing purposes, set to true
+    sameSite: "None",
   });
   return res
     .status(200)
