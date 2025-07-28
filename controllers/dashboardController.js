@@ -25,39 +25,75 @@ export const getDashboardData = async (req, res) => {
   }
 };
 
+// export const setHomeGrid = async (req, res) => {
+//   try {
+//     const { items } = req.body;
+//     const { user } = req.user;
+
+//     if (!items || items.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ status: "fail", message: "Add at least one item!" });
+//     }
+
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ status: "fail", message: "User not found!" });
+//     }
+
+//     if (user.role !== "admin" && user.role !== "writer") {
+//       return res
+//         .status(403)
+//         .json({ status: "fail", message: "Unauthorized action!" });
+//     }
+
+//     let homeAssets = await Assets.findOne();
+
+//     // Check if home assets exist
+//     if (!homeAssets) {
+//       // If no assets exist, create a new document
+//       homeAssets = new Assets({
+//         topFiveGrid: items,
+//       });
+//     } else {
+//       // If assets exist, update the topFiveGrid with the new items
+//       homeAssets.topFiveGrid = items;
+//     }
+
+//     await homeAssets.save();
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Added successfully",
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ status: "fail", message: error.message });
+//   }
+// };
+
 export const setHomeGrid = async (req, res) => {
   try {
-    const { items } = req.body;
+    const { items } = req.body; // [{ news: ObjectId, position: 1 }, ...]
     const { user } = req.user;
 
-    if (!items || items.length === 0) {
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Add at least one item!" });
+    if (!items || items.length !== 5) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Exactly 5 items with positions must be selected!",
+      });
     }
 
-    if (!user) {
-      return res
-        .status(404)
-        .json({ status: "fail", message: "User not found!" });
-    }
-
-    if (user.role !== "admin" && user.role !== "writer") {
-      return res
-        .status(403)
-        .json({ status: "fail", message: "Unauthorized action!" });
+    if (!user || (user.role !== "admin" && user.role !== "writer")) {
+      return res.status(403).json({ status: "fail", message: "Unauthorized" });
     }
 
     let homeAssets = await Assets.findOne();
 
-    // Check if home assets exist
     if (!homeAssets) {
-      // If no assets exist, create a new document
-      homeAssets = new Assets({
-        topFiveGrid: items,
-      });
+      homeAssets = new Assets({ topFiveGrid: items });
     } else {
-      // If assets exist, update the topFiveGrid with the new items
       homeAssets.topFiveGrid = items;
     }
 
@@ -65,7 +101,7 @@ export const setHomeGrid = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      message: "Added successfully",
+      message: "Grid saved successfully",
     });
   } catch (error) {
     console.log(error);
@@ -73,15 +109,49 @@ export const setHomeGrid = async (req, res) => {
   }
 };
 
+// export const getHomeGrid = async (req, res) => {
+//   try {
+//     const homeAssets = await Assets.findOne();
+
+//     if (!homeAssets) {
+//       // If no assets are found, create a new document
+//       const newHomeAssets = new Assets({
+//         topFiveGrid: [],
+//       });
+//       await newHomeAssets.save();
+//       return res.status(200).json({
+//         status: "success",
+//         message: "No home assets found. Created a new document.",
+//         topFiveGrid: [],
+//       });
+//     }
+
+//     // If assets are found, retrieve news posts corresponding to topFiveGrid IDs
+//     const news = await News.find({
+//       _id: { $in: homeAssets.topFiveGrid },
+//     }).populate("postedBy", "fullName profileUrl");
+//     // .sort({ createdAt: -1 });
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Fetched successfully",
+//       news,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ status: "fail", message: error.message });
+//   }
+// }; 
+
 export const getHomeGrid = async (req, res) => {
   try {
-    const homeAssets = await Assets.findOne();
+    const homeAssets = await Assets.findOne().populate({
+      path: "topFiveGrid.news",
+      populate: { path: "postedBy", select: "fullName profileUrl" },
+    });
 
     if (!homeAssets) {
-      // If no assets are found, create a new document
-      const newHomeAssets = new Assets({
-        topFiveGrid: [],
-      });
+      const newHomeAssets = new Assets({ topFiveGrid: [] });
       await newHomeAssets.save();
       return res.status(200).json({
         status: "success",
@@ -90,16 +160,14 @@ export const getHomeGrid = async (req, res) => {
       });
     }
 
-    // If assets are found, retrieve news posts corresponding to topFiveGrid IDs
-    const news = await News.find({
-      _id: { $in: homeAssets.topFiveGrid },
-    }).populate("postedBy", "fullName profileUrl");
-    // .sort({ createdAt: -1 });
+    const sortedNews = homeAssets.topFiveGrid
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({ ...item.news._doc, position: item.position }));
 
     return res.status(200).json({
       status: "success",
       message: "Fetched successfully",
-      news,
+      news: sortedNews,
     });
   } catch (error) {
     console.log(error);
@@ -107,39 +175,79 @@ export const getHomeGrid = async (req, res) => {
   }
 };
 
+// export const setTopNine = async (req, res) => {
+//   try {
+//     const { items } = req.body;
+//     const { user } = req.user;
+
+//     if (!items || items.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ status: "fail", message: "Add at least one item!" });
+//     }
+
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ status: "fail", message: "User not found!" });
+//     }
+
+//     if (user.role !== "admin" && user.role !== "writer") {
+//       return res
+//         .status(403)
+//         .json({ status: "fail", message: "Unauthorized action!" });
+//     }
+
+//     let homeAssets = await Assets.findOne();
+
+//     // Check if home assets exist
+//     if (!homeAssets) {
+//       // If no assets exist, create a new document
+//       homeAssets = new Assets({
+//         topNine: items,
+//       });
+//     } else {
+//       // If assets exist, update the topNine with the new items
+//       homeAssets.topNine = items;
+//     }
+
+//     await homeAssets.save();
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Added successfully",
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ status: "fail", message: error.message });
+//   }
+// };
+
 export const setTopNine = async (req, res) => {
   try {
-    const { items } = req.body;
+    const { items } = req.body; // [{ news: ObjectId, position: 1 }, ...]
     const { user } = req.user;
 
-    if (!items || items.length === 0) {
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Add at least one item!" });
+    if (!items || items.length !== 9) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Exactly 9 posts with positions are required!",
+      });
     }
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ status: "fail", message: "User not found!" });
+      return res.status(404).json({ status: "fail", message: "User not found!" });
     }
 
     if (user.role !== "admin" && user.role !== "writer") {
-      return res
-        .status(403)
-        .json({ status: "fail", message: "Unauthorized action!" });
+      return res.status(403).json({ status: "fail", message: "Unauthorized action!" });
     }
 
     let homeAssets = await Assets.findOne();
 
-    // Check if home assets exist
     if (!homeAssets) {
-      // If no assets exist, create a new document
-      homeAssets = new Assets({
-        topNine: items,
-      });
+      homeAssets = new Assets({ topNine: items });
     } else {
-      // If assets exist, update the topNine with the new items
       homeAssets.topNine = items;
     }
 
@@ -147,47 +255,80 @@ export const setTopNine = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      message: "Added successfully",
+      message: "Top 9 updated successfully",
     });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+// export const getTopNine = async (req, res) => {
+//   try {
+//     const homeAssets = await Assets.findOne();
+
+//     if (!homeAssets) {
+//       // If no assets are found, create a new document
+//       const newHomeAssets = new Assets({
+//         topNine: [],
+//       });
+//       await newHomeAssets.save();
+//       return res.status(200).json({
+//         status: "success",
+//         message: "No data found!",
+//         topNine: [],
+//       });
+//     }
+
+//     // If assets are found, retrieve news posts corresponding to topNine IDs
+//     const news = await News.find({
+//       _id: { $in: homeAssets.topNine },
+//     }).populate("postedBy", "fullName profileUrl");
+//     // .sort({ createdAt: -1 });
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Fetched successfully",
+//       news,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ status: "fail", message: error.message });
+//   }
+// };
 
 export const getTopNine = async (req, res) => {
   try {
-    const homeAssets = await Assets.findOne();
+    const homeAssets = await Assets.findOne().populate({
+      path: "topNine.news",
+      populate: { path: "postedBy", select: "fullName profileUrl" },
+    });
 
     if (!homeAssets) {
-      // If no assets are found, create a new document
-      const newHomeAssets = new Assets({
-        topNine: [],
-      });
+      const newHomeAssets = new Assets({ topNine: [] });
       await newHomeAssets.save();
       return res.status(200).json({
         status: "success",
-        message: "No data found!",
-        topNine: [],
+        message: "No top 9 found",
+        news: [],
       });
     }
 
-    // If assets are found, retrieve news posts corresponding to topNine IDs
-    const news = await News.find({
-      _id: { $in: homeAssets.topNine },
-    }).populate("postedBy", "fullName profileUrl");
-    // .sort({ createdAt: -1 });
+    const sortedNews = homeAssets.topNine
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({ ...item.news._doc, position: item.position }));
 
     return res.status(200).json({
       status: "success",
-      message: "Fetched successfully",
-      news,
+      message: "Top 9 fetched successfully",
+      news: sortedNews,
     });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
 
 export const setTrends = async (req, res) => {
   try {

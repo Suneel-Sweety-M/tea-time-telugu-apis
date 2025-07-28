@@ -311,6 +311,73 @@ export const getAllVideos = async (req, res) => {
   }
 };
 
+export const getVideosByQuery = async (req, res) => {
+  try {
+    const { category, searchText, postedTime } = req.query;
+    const filter = {};
+
+    // Filter by category if provided
+    if (category) {
+      filter.subCategory = category;
+    }
+
+    // Filter by searchText in title, name, or description if provided
+    if (searchText) {
+      filter.$or = [
+        { name: { $regex: searchText, $options: "i" } },
+        { title: { $regex: searchText, $options: "i" } },
+        { description: { $regex: searchText, $options: "i" } },
+      ];
+    }
+
+    // Filter by postedTime if provided
+    if (postedTime) {
+      const now = new Date();
+      let startDate;
+
+      switch (postedTime) {
+        case "last24h":
+          startDate = new Date(now.setDate(now.getDate() - 1));
+          break;
+        case "last1week":
+          startDate = new Date(now.setDate(now.getDate() - 7));
+          break;
+        case "last1month":
+          startDate = new Date(now.setMonth(now.getMonth() - 1));
+          break;
+        case "last6months":
+          startDate = new Date(now.setMonth(now.getMonth() - 6));
+          break;
+        case "above6months":
+          startDate = new Date(now.setMonth(now.getMonth() - 6));
+          filter.createdAt = { $lt: startDate };
+          break;
+        default:
+          startDate = null;
+      }
+
+      if (startDate && postedTime !== "above6months") {
+        filter.createdAt = { $gte: startDate };
+      }
+    }
+
+    const videos = await Videos.find(filter)
+      .populate("postedBy", "fullName profileUrl")
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched videos",
+      videos,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+
 export const deleteVideo = async (req, res) => {
   try {
     const { videoId } = req.params;

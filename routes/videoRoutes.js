@@ -8,11 +8,13 @@ import {
   getPaginatedCategoryVideos,
   getVideo,
   getVideoByNewsId,
+  getVideosByQuery,
 } from "../controllers/videosController.js";
 
 const router = express.Router(); 
 
 router.get("/", getAllVideos);
+router.get("/query", getVideosByQuery);
 router.get("/all", getCategoryVideos);
 router.get("/category", getPaginatedCategoryVideos);
 router.get("/:videoId", getVideo);

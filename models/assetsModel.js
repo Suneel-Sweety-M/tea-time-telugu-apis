@@ -56,10 +56,14 @@ const assetsSchema = new mongoose.Schema(
     ],
     topFiveGrid: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "News",
+        news: {
+          type: Schema.Types.ObjectId,
+          ref: "News",
+        },
+        position: Number, // 1 to 5
       },
     ],
+
     featuredSlides: [
       {
         type: Schema.Types.ObjectId,
@@ -68,10 +72,14 @@ const assetsSchema = new mongoose.Schema(
     ],
     topNine: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "News",
+        news: {
+          type: Schema.Types.ObjectId,
+          ref: "News",
+        },
+        position: Number, // 1–9
       },
     ],
+
     filesLinks: [
       {
         type: String,

@@ -17,7 +17,7 @@ import {
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.get("/", getFilteredNews);
+router.get("/", getFilteredNews); 
 router.get("/search", getSearchedNews); 
 router.get("/filtered", filterNews);
 router.get("/category", getCategoryNews);
