@@ -118,6 +118,102 @@ export const getNews = async (req, res) => {
   }
 };
 
+export const getLatestNews = async (req, res) => {
+  try {
+    const news = await News.find()
+      .populate("postedBy", "fullName profileUrl")
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .limit(10) // Limit to latest 10 news
+      .exec();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched latest 10 News successfully",
+      news,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: error.message
+    });
+  }
+};
+
+export const getTrendingNews = async (req, res) => {
+  try {
+    // 7 days ago date
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const trendingNews = await News.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: oneWeekAgo } // only news from last 7 days
+        }
+      },
+      // Lookup comments count
+      {
+        $lookup: {
+          from: "comments", // your comments collection name
+          localField: "_id",
+          foreignField: "news", // field in Comments that links to News
+          as: "commentsData"
+        }
+      },
+      {
+        $addFields: {
+          commentsCount: { $size: "$commentsData" },
+          reactionsCount: { $size: "$reactions" } // assuming reactions is an array
+        }
+      },
+      {
+        $sort: {
+          reactionsCount: -1,
+          commentsCount: -1
+        }
+      },
+      {
+        $limit: 10 // get top 10
+      }
+    ]);
+
+    // Populate postedBy manually after aggregation
+    const populatedNews = await News.populate(trendingNews, {
+      path: "postedBy",
+      select: "fullName profileUrl"
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Trending news fetched successfully",
+      news: populatedNews
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const getHomeNews = async (req, res) => {
+  try {
+    const news = await News.find()
+      .populate("postedBy", "fullName profileUrl")
+      .sort({ createdAt: -1 })
+      .limit(9)
+      .exec();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched Home News successfully",
+      news,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
 export const getNewsById = async (req, res) => {
   try {
     const { postId } = req.params;

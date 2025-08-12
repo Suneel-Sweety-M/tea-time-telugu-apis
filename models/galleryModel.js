@@ -36,6 +36,12 @@ const gallerySchema = new mongoose.Schema(
     tags: {
       type: Array,
     },
+    reactions: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+        type: { type: String, required: true },
+      },
+    ],
     comments: [
       {
         type: Schema.Types.ObjectId,

@@ -233,7 +233,10 @@ export const getVideoByNewsId = async (req, res) => {
     }
 
     // Fetch the main video by newsId
-    const video = await Videos.findOne({ newsId });
+    const video = await Videos.findOne({ newsId }).populate(
+      "postedBy",
+      "fullName profileUrl"
+    );
 
     if (!video) {
       return res.status(404).json({
@@ -311,6 +314,27 @@ export const getAllVideos = async (req, res) => {
   }
 };
 
+export const getHomeVideos = async (req, res) => {
+  try {
+    const { subCategory, limit } = req.query;
+    const videos = await Videos.find({
+      category: "videos",
+      subCategory: subCategory || "trailers",
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit || 10);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched videos successfully",
+      videos,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Failed to fetch videos." });
+  }
+};
+
 export const getVideosByQuery = async (req, res) => {
   try {
     const { category, searchText, postedTime } = req.query;
@@ -376,7 +400,6 @@ export const getVideosByQuery = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
 
 export const deleteVideo = async (req, res) => {
   try {

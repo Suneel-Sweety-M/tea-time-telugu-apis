@@ -5,6 +5,7 @@ import {
   deleteVideo,
   getAllVideos,
   getCategoryVideos,
+  getHomeVideos,
   getPaginatedCategoryVideos,
   getVideo,
   getVideoByNewsId,
@@ -14,6 +15,7 @@ import {
 const router = express.Router(); 
 
 router.get("/", getAllVideos);
+router.get("/home", getHomeVideos);
 router.get("/query", getVideosByQuery);
 router.get("/all", getCategoryVideos);
 router.get("/category", getPaginatedCategoryVideos);

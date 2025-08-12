@@ -8,16 +8,22 @@ import {
   filterNews,
   getCategoryNews,
   getFilteredNews,
+  getHomeNews,
+  getLatestNews,
   getNews,
   getNewsById,
   getNewsByNewsId,
   getSearchedNews,
+  getTrendingNews,
 } from "../controllers/newsController.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/", getFilteredNews); 
+router.get("/home", getHomeNews);
+router.get("/latest", getLatestNews);
+router.get("/trending", getTrendingNews);
 router.get("/search", getSearchedNews); 
 router.get("/filtered", filterNews);
 router.get("/category", getCategoryNews);

@@ -13,6 +13,7 @@ import {
   getHomeGrid,
   getHomeLongAd,
   getHomeShortAd,
+  getHotTopics,
   getMovieCollections,
   getMoviePoster,
   getMovieReleases,
@@ -28,6 +29,7 @@ import {
   setHomeGrid,
   setHomeLongAd,
   setHomeShortAd,
+  setHotTopics,
   setMoviePoster,
   setNavbarAd,
   setNewsLongAd,
@@ -46,8 +48,9 @@ router.get("/data", getDashboardData);
 router.get("/get-home-grid", getHomeGrid);
 router.get("/get-top-nine", getTopNine);
 router.get("/get-trends", getTrends);
+router.get("/get-hot-topics", getHotTopics);
 router.get("/get-files-links", getFilesLinks);
-router.get("/get-movie-releases", getMovieReleases);
+router.get("/get-movie-releases", getMovieReleases); 
 router.get("/get-movie-collections", getMovieCollections);
 
 /*=== Ads & Posters ===*/
@@ -84,6 +87,7 @@ router.post("/add-movie-collections", userAuth, addMovieCollections);
 router.post("/set-home-grid", userAuth, setHomeGrid);
 router.post("/set-top-nine", userAuth, setTopNine);
 router.post("/set-trends", userAuth, setTrends);
+router.post("/set-hot-topics", userAuth, setHotTopics);
 router.post("/set-files-links", userAuth, upload.single("file"), setFilesLink);
 
 export default router;

@@ -6,7 +6,7 @@ const userAuth = (req, res, next) => {
   if (!token) {
     return res.status(401).send({ status: "fail", message: "No token provided!" });
   }
-
+ 
   try {
     const decoded = JWT.verify(token, process.env.JWT_REFRESH_SECRET_KEY);
     req.user = { user: decoded.user };

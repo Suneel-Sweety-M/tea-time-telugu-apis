@@ -3,6 +3,7 @@ import Assets from "../models/assetsModel.js";
 import News from "../models/newsModel.js";
 import { uploadFile } from "../services/s3Services.js";
 import Users from "../models/userModel.js";
+import mongoose from "mongoose";
 
 export const getDashboardData = async (req, res) => {
   try {
@@ -24,54 +25,6 @@ export const getDashboardData = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
-// export const setHomeGrid = async (req, res) => {
-//   try {
-//     const { items } = req.body;
-//     const { user } = req.user;
-
-//     if (!items || items.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ status: "fail", message: "Add at least one item!" });
-//     }
-
-//     if (!user) {
-//       return res
-//         .status(404)
-//         .json({ status: "fail", message: "User not found!" });
-//     }
-
-//     if (user.role !== "admin" && user.role !== "writer") {
-//       return res
-//         .status(403)
-//         .json({ status: "fail", message: "Unauthorized action!" });
-//     }
-
-//     let homeAssets = await Assets.findOne();
-
-//     // Check if home assets exist
-//     if (!homeAssets) {
-//       // If no assets exist, create a new document
-//       homeAssets = new Assets({
-//         topFiveGrid: items,
-//       });
-//     } else {
-//       // If assets exist, update the topFiveGrid with the new items
-//       homeAssets.topFiveGrid = items;
-//     }
-
-//     await homeAssets.save();
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Added successfully",
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ status: "fail", message: error.message });
-//   }
-// };
 
 export const setHomeGrid = async (req, res) => {
   try {
@@ -109,40 +62,6 @@ export const setHomeGrid = async (req, res) => {
   }
 };
 
-// export const getHomeGrid = async (req, res) => {
-//   try {
-//     const homeAssets = await Assets.findOne();
-
-//     if (!homeAssets) {
-//       // If no assets are found, create a new document
-//       const newHomeAssets = new Assets({
-//         topFiveGrid: [],
-//       });
-//       await newHomeAssets.save();
-//       return res.status(200).json({
-//         status: "success",
-//         message: "No home assets found. Created a new document.",
-//         topFiveGrid: [],
-//       });
-//     }
-
-//     // If assets are found, retrieve news posts corresponding to topFiveGrid IDs
-//     const news = await News.find({
-//       _id: { $in: homeAssets.topFiveGrid },
-//     }).populate("postedBy", "fullName profileUrl");
-//     // .sort({ createdAt: -1 });
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Fetched successfully",
-//       news,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ status: "fail", message: error.message });
-//   }
-// }; 
-
 export const getHomeGrid = async (req, res) => {
   try {
     const homeAssets = await Assets.findOne().populate({
@@ -161,8 +80,12 @@ export const getHomeGrid = async (req, res) => {
     }
 
     const sortedNews = homeAssets.topFiveGrid
+      .filter((item) => item.news) // skip null or undefined news
       .sort((a, b) => a.position - b.position)
-      .map((item) => ({ ...item.news._doc, position: item.position }));
+      .map((item) => ({
+        ...item.news.toObject(), // safer than _doc
+        position: item.position,
+      }));
 
     return res.status(200).json({
       status: "success",
@@ -174,54 +97,6 @@ export const getHomeGrid = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
-// export const setTopNine = async (req, res) => {
-//   try {
-//     const { items } = req.body;
-//     const { user } = req.user;
-
-//     if (!items || items.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ status: "fail", message: "Add at least one item!" });
-//     }
-
-//     if (!user) {
-//       return res
-//         .status(404)
-//         .json({ status: "fail", message: "User not found!" });
-//     }
-
-//     if (user.role !== "admin" && user.role !== "writer") {
-//       return res
-//         .status(403)
-//         .json({ status: "fail", message: "Unauthorized action!" });
-//     }
-
-//     let homeAssets = await Assets.findOne();
-
-//     // Check if home assets exist
-//     if (!homeAssets) {
-//       // If no assets exist, create a new document
-//       homeAssets = new Assets({
-//         topNine: items,
-//       });
-//     } else {
-//       // If assets exist, update the topNine with the new items
-//       homeAssets.topNine = items;
-//     }
-
-//     await homeAssets.save();
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Added successfully",
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ status: "fail", message: error.message });
-//   }
-// };
 
 export const setTopNine = async (req, res) => {
   try {
@@ -236,11 +111,15 @@ export const setTopNine = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(404).json({ status: "fail", message: "User not found!" });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found!" });
     }
 
     if (user.role !== "admin" && user.role !== "writer") {
-      return res.status(403).json({ status: "fail", message: "Unauthorized action!" });
+      return res
+        .status(403)
+        .json({ status: "fail", message: "Unauthorized action!" });
     }
 
     let homeAssets = await Assets.findOne();
@@ -263,40 +142,6 @@ export const setTopNine = async (req, res) => {
   }
 };
 
-// export const getTopNine = async (req, res) => {
-//   try {
-//     const homeAssets = await Assets.findOne();
-
-//     if (!homeAssets) {
-//       // If no assets are found, create a new document
-//       const newHomeAssets = new Assets({
-//         topNine: [],
-//       });
-//       await newHomeAssets.save();
-//       return res.status(200).json({
-//         status: "success",
-//         message: "No data found!",
-//         topNine: [],
-//       });
-//     }
-
-//     // If assets are found, retrieve news posts corresponding to topNine IDs
-//     const news = await News.find({
-//       _id: { $in: homeAssets.topNine },
-//     }).populate("postedBy", "fullName profileUrl");
-//     // .sort({ createdAt: -1 });
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Fetched successfully",
-//       news,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ status: "fail", message: error.message });
-//   }
-// };
-
 export const getTopNine = async (req, res) => {
   try {
     const homeAssets = await Assets.findOne().populate({
@@ -315,8 +160,12 @@ export const getTopNine = async (req, res) => {
     }
 
     const sortedNews = homeAssets.topNine
+      .filter((item) => item.news) // skip null or undefined news
       .sort((a, b) => a.position - b.position)
-      .map((item) => ({ ...item.news._doc, position: item.position }));
+      .map((item) => ({
+        ...item.news.toObject(), // safer than _doc
+        position: item.position,
+      }));
 
     return res.status(200).json({
       status: "success",
@@ -328,7 +177,6 @@ export const getTopNine = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
 
 export const setTrends = async (req, res) => {
   try {
@@ -380,7 +228,10 @@ export const setTrends = async (req, res) => {
 
 export const getTrends = async (req, res) => {
   try {
-    const homeAssets = await Assets.findOne();
+    const homeAssets = await Assets.findOne().populate({
+      path: "trends.news",
+      populate: { path: "postedBy", select: "fullName profileUrl" },
+    });
 
     if (!homeAssets) {
       // If no assets are found, create a new document
@@ -395,20 +246,119 @@ export const getTrends = async (req, res) => {
       });
     }
 
-    // If assets are found, retrieve news posts corresponding to trends IDs
-    const news = await News.find({
-      _id: { $in: homeAssets.trends },
-    }).populate("postedBy", "fullName profileUrl");
-    // .sort({ createdAt: -1 });
+    const sortedNews = homeAssets.trends
+      .filter((item) => item.news) // skip null or undefined news
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({
+        ...item.news.toObject(), // safer than _doc
+        position: item.position,
+      }));
 
     return res.status(200).json({
       status: "success",
       message: "Fetched successfully",
-      news,
+      news: sortedNews,
     });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const setHotTopics = async (req, res) => {
+  try {
+    const { items } = req.body; // [{ news: ObjectId, position: 1 }, ...]
+    const { user } = req.user;
+
+    if (!items || items.length !== 5) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Exactly 5 posts with positions are required!",
+      });
+    }
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found!" });
+    }
+
+    if (user.role !== "admin" && user.role !== "writer") {
+      return res
+        .status(403)
+        .json({ status: "fail", message: "Unauthorized action!" });
+    }
+
+    if (!items.every((item) => item.news && item.position)) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Each hot topic must have a news ID and position",
+      });
+    }
+
+    items.forEach((item) => {
+      item.news = new mongoose.Types.ObjectId(item.news);
+    });
+
+    let homeAssets = await Assets.findOne();
+
+    if (!homeAssets) {
+      homeAssets = new Assets({ hotTopics: items });
+    } else {
+      homeAssets.hotTopics = items;
+    }
+
+    await homeAssets.save();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Hot Topics updated successfully",
+    });
+  } catch (error) {
+    console.error("Error in setHotTopics:", error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getHotTopics = async (req, res) => {
+  try {
+    const homeAssets = await Assets.findOne().populate({
+      path: "hotTopics.news",
+      populate: { path: "postedBy", select: "fullName profileUrl" },
+    });
+
+    if (!homeAssets) {
+      const newHomeAssets = new Assets({ hotTopics: [] });
+      await newHomeAssets.save();
+      return res.status(200).json({
+        status: "success",
+        message: "No hot topics found",
+        news: [],
+      });
+    }
+
+    const sortedNews = homeAssets.hotTopics
+      .filter((item) => item.news) // skip null or undefined news
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({
+        ...item.news.toObject(), // safer than _doc
+        position: item.position,
+      }));
+
+    return res.status(200).json({
+      status: "success",
+      message: "Hot Topics fetched successfully",
+      news: sortedNews,
+    });
+  } catch (error) {
+    console.error("Error in getHotTopics:", error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Internal server error",
+    });
   }
 };
 

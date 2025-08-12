@@ -50,8 +50,11 @@ const assetsSchema = new mongoose.Schema(
     ],
     trends: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "News",
+        news: {
+          type: Schema.Types.ObjectId,
+          ref: "News",
+        },
+        position: Number, // 1 to 5
       },
     ],
     topFiveGrid: [
@@ -64,10 +67,13 @@ const assetsSchema = new mongoose.Schema(
       },
     ],
 
-    featuredSlides: [
+    hotTopics: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "News",
+        news: {
+          type: Schema.Types.ObjectId,
+          ref: "News",
+        },
+        position: Number, // 1 to 5
       },
     ],
     topNine: [

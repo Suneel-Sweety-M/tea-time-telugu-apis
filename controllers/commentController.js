@@ -1,5 +1,6 @@
 import Comments from "../models/commentsModel.js";
 import News from "../models/newsModel.js";
+import Gallery from "../models/galleryModel.js";
 
 export const getComments = async (req, res) => {
   try {
@@ -130,6 +131,61 @@ export const addReaction = async (req, res) => {
     }
 
     await news.save();
+
+    res.status(200).send({
+      status: "success",
+      message: "Reaction added/updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
+
+export const addGalleryReaction = async (req, res) => {
+  try {
+    const { galleryId } = req.params;
+    const { userId, type } = req.body;
+
+    if (!galleryId) {
+      return res
+        .status(404)
+        .send({ status: "fail", message: "Gallery id not found!" });
+    }
+
+    if (!type) {
+      return res
+        .status(404)
+        .send({ status: "fail", message: "Reaction type is not found!" });
+    }
+
+    if (!userId) {
+      return res
+        .status(404)
+        .send({ status: "fail", message: "User id not found!" });
+    }
+
+    const gallery = await Gallery.findById(galleryId);
+    if (!gallery) {
+      return res
+        .status(404)
+        .send({ status: "fail", message: "Gallery post not found" });
+    }
+
+    const existingReactionIndex = gallery.reactions.findIndex(
+      (reaction) => reaction.userId.toString() === userId.toString()
+    );
+
+    if (existingReactionIndex >= 0) {
+      gallery.reactions[existingReactionIndex].type = type;
+    } else {
+      gallery.reactions.push({ userId, type });
+    }
+
+    await gallery.save();
 
     res.status(200).send({
       status: "success",
