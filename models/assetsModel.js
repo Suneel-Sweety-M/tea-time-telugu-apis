@@ -2,50 +2,59 @@ import mongoose, { Schema } from "mongoose";
 
 const assetsSchema = new mongoose.Schema(
   {
-    gallery: {
-      type: Schema.Types.ObjectId,
-      ref: "Gallery",
-    },
-    andhra: [
+    // gallery: {
+    //   type: Schema.Types.ObjectId,
+    //   ref: "Gallery",
+    // },
+    // andhra: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    // telangana: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    // movies: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    // reviews: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    // gossips: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    // latestStories: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    // trailers: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "News",
+    //   },
+    // ],
+    breakingNews: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "News",
-      },
-    ],
-    telangana: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "News",
-      },
-    ],
-    movies: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "News",
-      },
-    ],
-    reviews: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "News",
-      },
-    ],
-    gossips: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "News",
-      },
-    ],
-    latestStories: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "News",
-      },
-    ],
-    trailers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "News",
+        news: {
+          type: Schema.Types.ObjectId,
+          ref: "News",
+        },
+        position: Number,
       },
     ],
     trends: [
@@ -66,7 +75,6 @@ const assetsSchema = new mongoose.Schema(
         position: Number, // 1 to 5
       },
     ],
-
     hotTopics: [
       {
         news: {
@@ -85,7 +93,24 @@ const assetsSchema = new mongoose.Schema(
         position: Number, // 1–9
       },
     ],
-
+    categoryTopPosts: [
+      {
+        category: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        posts: [
+          {
+            news: {
+              type: Schema.Types.ObjectId,
+              ref: "News",
+            },
+            position: Number, // 1 to 5
+          },
+        ],
+      },
+    ],
     filesLinks: [
       {
         type: String,

@@ -6,8 +6,10 @@ import {
   deleteMovieRelease,
   editMovieCollection,
   editMovieRelease,
+  getBreakingNews,
   getCategoryLongAd,
   getCategoryShortAd,
+  getCategoryTopPosts,
   getDashboardData,
   getFilesLinks,
   getHomeGrid,
@@ -23,8 +25,10 @@ import {
   getPopupPoster,
   getTopNine,
   getTrends,
+  setBreakingNews,
   setCategoryLongAd,
   setCategoryShortAd,
+  setCategoryTopPosts,
   setFilesLink,
   setHomeGrid,
   setHomeLongAd,
@@ -50,8 +54,10 @@ router.get("/get-top-nine", getTopNine);
 router.get("/get-trends", getTrends);
 router.get("/get-hot-topics", getHotTopics);
 router.get("/get-files-links", getFilesLinks);
-router.get("/get-movie-releases", getMovieReleases); 
+router.get("/get-movie-releases", getMovieReleases);
 router.get("/get-movie-collections", getMovieCollections);
+router.get("/get-category-top", getCategoryTopPosts);
+router.get("/get-breaking-news", getBreakingNews);
 
 /*=== Ads & Posters ===*/
 router.get("/get-popup-poster", getPopupPoster);
@@ -88,6 +94,8 @@ router.post("/set-home-grid", userAuth, setHomeGrid);
 router.post("/set-top-nine", userAuth, setTopNine);
 router.post("/set-trends", userAuth, setTrends);
 router.post("/set-hot-topics", userAuth, setHotTopics);
+router.post("/set-category-top", userAuth, setCategoryTopPosts);
+router.post("/set-breaking-news", userAuth, setBreakingNews);
 router.post("/set-files-links", userAuth, upload.single("file"), setFilesLink);
 
 export default router;

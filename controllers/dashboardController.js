@@ -362,6 +362,258 @@ export const getHotTopics = async (req, res) => {
   }
 };
 
+export const setCategoryTopPosts = async (req, res) => {
+  try {
+    const { category, posts } = req.body; // posts = [{ news: ObjectId, position: 1 }, ...]
+    const { user } = req.user;
+
+    if (!category || !Array.isArray(posts)) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Category is required and posts array must need!",
+      });
+    }
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found!" });
+    }
+
+    if (user.role !== "admin" && user.role !== "writer") {
+      return res
+        .status(403)
+        .json({ status: "fail", message: "Unauthorized action!" });
+    }
+
+    let assets = await Assets.findOne();
+
+    if (!assets) {
+      assets = new Assets({
+        categoryTopPosts: [{ category, posts }],
+      });
+    } else {
+      // Find if category already exists
+      const existingIndex = assets.categoryTopPosts.findIndex(
+        (c) => c.category.toLowerCase() === category.toLowerCase()
+      );
+
+      if (existingIndex !== -1) {
+        assets.categoryTopPosts[existingIndex].posts = posts;
+      } else {
+        assets.categoryTopPosts.push({ category, posts });
+      }
+    }
+
+    await assets.save();
+
+    return res.status(200).json({
+      status: "success",
+      message: `Top posts updated successfully for category "${category}"`,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const getCategoryTopPosts = async (req, res) => { 
+  try {
+    const { category } = req.query;
+
+    if (!category) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Category query parameter is required!",
+      });
+    }
+
+    const assets = await Assets.findOne().populate({
+      path: "categoryTopPosts.posts.news",
+      populate: { path: "postedBy", select: "fullName profileUrl" },
+    });
+
+    if (!assets) {
+      return res.status(200).json({
+        status: "success",
+        message: "No category top posts found",
+        posts: [],
+      });
+    }
+
+    const categoryData = assets.categoryTopPosts.find(
+      (c) => c.category.toLowerCase() === category.toLowerCase()
+    );
+
+    if (!categoryData) {
+      return res.status(200).json({
+        status: "success",
+        message: `No posts found for category "${category}"`,
+        posts: [],
+      });
+    }
+
+    const sortedPosts = categoryData.posts
+      .filter((item) => item.news)
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({
+        ...item.news.toObject(),
+        position: item.position,
+      }));
+
+    return res.status(200).json({
+      status: "success",
+      message: `Top posts for "${category}" fetched successfully`,
+      posts: sortedPosts,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+
+export const setBreakingNews = async (req, res) => {
+  try {
+    const { items } = req.body; // [{ news: ObjectId, position: Number }, ...]
+    const { user } = req.user;
+
+    // Check user authentication and authorization first
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found!" });
+    }
+
+    if (user.role !== "admin" && user.role !== "writer") {
+      return res
+        .status(403)
+        .json({ status: "fail", message: "Unauthorized action!" });
+    }
+
+    // Allow empty array to clear all breaking news
+    if (!items) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Items array is required",
+      });
+    }
+
+    // Maximum 5 breaking news posts allowed (adjust as needed)
+    // if (items.length > 5) {
+    //   return res.status(400).json({
+    //     status: "fail",
+    //     message: "Maximum 5 breaking news posts allowed!",
+    //   });
+    // }
+
+    // Validate each item has both news ID and position if array is not empty
+    if (
+      items.length > 0 &&
+      !items.every((item) => item.news && typeof item.position === "number")
+    ) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Each breaking news item must have a news ID and position",
+      });
+    }
+
+    // Check for duplicate positions if array is not empty
+    if (items.length > 0) {
+      const positions = items.map((item) => item.position);
+      if (new Set(positions).size !== positions.length) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Duplicate positions found in breaking news items",
+        });
+      }
+    }
+
+    // Convert news IDs to ObjectId
+    const formattedItems = items.map((item) => ({
+      news: new mongoose.Types.ObjectId(item.news),
+      position: item.position,
+    }));
+
+    // Find or create assets document
+    let homeAssets = await Assets.findOne();
+
+    if (!homeAssets) {
+      // If no assets exist and we're setting empty array, no need to create
+      if (items.length === 0) {
+        return res.status(200).json({
+          status: "success",
+          message: "Breaking news cleared (no existing breaking news)",
+        });
+      }
+      homeAssets = new Assets({ breakingNews: formattedItems });
+    } else {
+      homeAssets.breakingNews = formattedItems;
+    }
+
+    // Save to database
+    await homeAssets.save();
+
+    return res.status(200).json({
+      status: "success",
+      message:
+        items.length > 0
+          ? "Breaking news updated successfully"
+          : "Breaking news cleared successfully",
+    });
+  } catch (error) {
+    console.error("Error in setBreakingNews:", error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getBreakingNews = async (req, res) => {
+  try {
+    // Find assets and populate breaking news with full news details
+    const homeAssets = await Assets.findOne().populate({
+      path: "breakingNews.news",
+      populate: { path: "postedBy", select: "fullName profileUrl" },
+    });
+
+    // If no assets document exists or breakingNews is empty, return empty array
+    if (
+      !homeAssets ||
+      !homeAssets.breakingNews ||
+      homeAssets.breakingNews.length === 0
+    ) {
+      return res.status(200).json({
+        status: "success",
+        message: "No breaking news found",
+        news: [],
+      });
+    }
+
+    // Filter out any null/undefined news, sort by position, and map to response format
+    const breakingNews = homeAssets.breakingNews
+      .filter((item) => item.news) // skip null or undefined news
+      .sort((a, b) => a.position - b.position) // sort by position
+      .map((item) => ({
+        ...item.news.toObject(), // convert to plain JS object
+        position: item.position, // include position in response
+      }));
+
+    return res.status(200).json({
+      status: "success",
+      message: "Breaking news fetched successfully",
+      news: breakingNews,
+    });
+  } catch (error) {
+    console.error("Error in getBreakingNews:", error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Internal server error",
+    });
+  }
+};
+
 export const setFilesLink = async (req, res) => {
   try {
     const { user } = req.user;
