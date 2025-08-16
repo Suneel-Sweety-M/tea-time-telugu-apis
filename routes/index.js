@@ -6,6 +6,7 @@ import userRoute from "./userRoutes.js";
 import dashboardRoute from "./dashboardRoutes.js";
 import commentsRoute from "./commentsRoutes.js";
 import videoRoute from "./videoRoutes.js";
+import speechRoute from "./speechRoutes.js";
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use("/user", userRoute);
 router.use("/dashboard", dashboardRoute);
 router.use("/comments", commentsRoute);
 router.use("/videos", videoRoute);
+router.use("/speech", speechRoute);
 
 export default router;

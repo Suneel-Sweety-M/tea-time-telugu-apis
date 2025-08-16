@@ -619,6 +619,7 @@ export const editNews = async (req, res) => {
     newsToEdit.category = category;
     newsToEdit.subCategory = subCategory;
     newsToEdit.tags = tags;
+    newsToEdit.newsAudio = null;
 
     if (title) {
       newsToEdit.newsId = await generateUniqueSlug(News, title, id);

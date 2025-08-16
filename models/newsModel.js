@@ -35,6 +35,9 @@ const newsSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    newsAudio: {
+      type: String,
+    },
     reactions: [ 
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
