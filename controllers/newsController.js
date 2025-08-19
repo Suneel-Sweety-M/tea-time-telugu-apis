@@ -135,7 +135,7 @@ export const getLatestNews = async (req, res) => {
     console.error(error);
     return res.status(500).json({
       status: "fail",
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -149,8 +149,8 @@ export const getTrendingNews = async (req, res) => {
     const trendingNews = await News.aggregate([
       {
         $match: {
-          createdAt: { $gte: oneWeekAgo } // only news from last 7 days
-        }
+          createdAt: { $gte: oneWeekAgo }, // only news from last 7 days
+        },
       },
       // Lookup comments count
       {
@@ -158,36 +158,36 @@ export const getTrendingNews = async (req, res) => {
           from: "comments", // your comments collection name
           localField: "_id",
           foreignField: "news", // field in Comments that links to News
-          as: "commentsData"
-        }
+          as: "commentsData",
+        },
       },
       {
         $addFields: {
           commentsCount: { $size: "$commentsData" },
-          reactionsCount: { $size: "$reactions" } // assuming reactions is an array
-        }
+          reactionsCount: { $size: "$reactions" }, // assuming reactions is an array
+        },
       },
       {
         $sort: {
           reactionsCount: -1,
-          commentsCount: -1
-        }
+          commentsCount: -1,
+        },
       },
       {
-        $limit: 10 // get top 10
-      }
+        $limit: 10, // get top 10
+      },
     ]);
 
     // Populate postedBy manually after aggregation
     const populatedNews = await News.populate(trendingNews, {
       path: "postedBy",
-      select: "fullName profileUrl"
+      select: "fullName profileUrl",
     });
 
     return res.status(200).json({
       status: "success",
       message: "Trending news fetched successfully",
-      news: populatedNews
+      news: populatedNews,
     });
   } catch (error) {
     console.error(error);
@@ -343,7 +343,7 @@ export const getFilteredNews = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
- 
+
 export const getCategoryNews = async (req, res) => {
   const { category, subcategory, page = 1, limit = 12 } = req.query;
   let filter = {};
@@ -611,6 +611,12 @@ export const editNews = async (req, res) => {
         status: "fail",
         message: "You don't have permission to edit this news!",
       });
+    }
+
+    if (req?.file) {
+      const uploadResult = await uploadFile(req.file);
+      const mainUrl = uploadResult.Location;
+      newsToEdit.mainUrl = mainUrl;
     }
 
     // Update the fields with new data

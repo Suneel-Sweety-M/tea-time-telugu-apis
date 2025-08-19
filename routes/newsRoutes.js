@@ -30,8 +30,8 @@ router.get("/category", getCategoryNews);
 router.get("/:postId", getNewsById);
 router.get("/n/:newsId", getNewsByNewsId);
 
-router.post("/add-news", userAuth, upload.single("mainFile"), addNews);
-router.post("/:id/edit-news", userAuth, editNews);
+router.post("/add-news", userAuth, upload.single("mainFile"), addNews); 
+router.post("/:id/edit-news", userAuth, upload.single("mainFile"), editNews);
 router.post("/:id/delete-news", userAuth, deleteNews);
 
 export default router;

@@ -21,7 +21,7 @@ router.get("/search", getGalleryByQuery);
 router.get("/:postId", getGalleryById);
 router.get("/g/:newsId", getGalleryBynewsId);
 
-router.put("/:id/edit", userAuth, editGallery);
+router.put("/:id/edit", userAuth, upload.array("mediaFiles"), editGallery);
 
 router.delete("/:id/delete", userAuth, deleteGallery);
 

@@ -294,14 +294,23 @@ export const editGallery = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, name, description, category } = req.body;
+
+    let removedImages = req.body["removedImages"];
+    if (removedImages && !Array.isArray(removedImages)) {
+      removedImages = [removedImages]; // wrap single value into array
+    }
     const { user } = req.user;
 
     if (!title || !name || !description || !category) {
-      return res.status(404).send({ status: "fail", message: "All fields are required!" });
+      return res
+        .status(404)
+        .send({ status: "fail", message: "All fields are required!" });
     }
 
     if (!user) {
-      return res.status(404).send({ status: "fail", message: "User not found!" });
+      return res
+        .status(404)
+        .send({ status: "fail", message: "User not found!" });
     }
 
     const currentUser = await Users.findById(user?._id);
@@ -319,21 +328,55 @@ export const editGallery = async (req, res) => {
     const gallery = await Gallery.findById(id);
 
     if (!gallery) {
-      return res.status(404).send({ status: "fail", message: "Gallery not found!" });
+      return res
+        .status(404)
+        .send({ status: "fail", message: "Gallery not found!" });
     }
 
-    if (gallery.postedBy.toString() !== user._id.toString() && currentUser.role !== "admin" && currentUser.role !== "writer") {
-      return res.status(403).send({ status: "fail", message: "Unauthorized action!" });
+    if (
+      gallery.postedBy.toString() !== user._id.toString() &&
+      currentUser.role !== "admin" &&
+      currentUser.role !== "writer"
+    ) {
+      return res
+        .status(403)
+        .send({ status: "fail", message: "Unauthorized action!" });
+    }
+
+    // ✅ Remove deleted images from gallery.galleryPics
+    if (removedImages?.length) {
+      gallery.galleryPics = gallery.galleryPics.filter(
+        (img) => !removedImages.includes(img.url)
+      );
+
+      for (const imgUrl of removedImages) {
+        try {
+          if (imgUrl && typeof imgUrl === "string") {
+            await deleteFile(imgUrl);
+          }
+        } catch (err) {
+          console.log("AWS delete error:", err.message);
+        }
+      }
+    }
+
+    // ✅ Add new uploaded files
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const uploadResult = await uploadFile(file);
+        gallery.galleryPics.push({ url: uploadResult.Location });
+      }
+    }
+
+    if (title) {
+      const newsId = await generateUniqueSlug(Gallery, title, id);
+      gallery.newsId = newsId;
     }
 
     gallery.title = title;
     gallery.name = name;
     gallery.description = description;
     gallery.category = category;
-
-    if (title) {
-      gallery.newsId = await generateUniqueSlug(Gallery, title, id);
-    }
 
     await gallery.save();
 
@@ -353,7 +396,9 @@ export const deleteGallery = async (req, res) => {
     const { user } = req.user;
 
     if (!user) {
-      return res.status(404).send({ status: "fail", message: "User not found!" });
+      return res
+        .status(404)
+        .send({ status: "fail", message: "User not found!" });
     }
 
     const currentUser = await Users.findById(user._id);
@@ -371,11 +416,19 @@ export const deleteGallery = async (req, res) => {
     const gallery = await Gallery.findById(id);
 
     if (!gallery) {
-      return res.status(404).send({ status: "fail", message: "Gallery not found!" });
+      return res
+        .status(404)
+        .send({ status: "fail", message: "Gallery not found!" });
     }
 
-    if (gallery.postedBy.toString() !== user._id.toString() && currentUser.role !== "admin" && currentUser.role !== "writer") {
-      return res.status(403).send({ status: "fail", message: "Unauthorized action!" });
+    if (
+      gallery.postedBy.toString() !== user._id.toString() &&
+      currentUser.role !== "admin" &&
+      currentUser.role !== "writer"
+    ) {
+      return res
+        .status(403)
+        .send({ status: "fail", message: "Unauthorized action!" });
     }
 
     await Gallery.findByIdAndDelete(id);

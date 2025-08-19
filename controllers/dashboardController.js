@@ -364,13 +364,14 @@ export const getHotTopics = async (req, res) => {
 
 export const setCategoryTopPosts = async (req, res) => {
   try {
-    const { category, posts } = req.body; // posts = [{ news: ObjectId, position: 1 }, ...]
+    const { category, posts = [] } = req.body; // Default to empty array if posts not provided
     const { user } = req.user;
 
-    if (!category || !Array.isArray(posts)) {
+    // Validate category exists (but allow empty posts array)
+    if (!category) {
       return res.status(400).json({
         status: "fail",
-        message: "Category is required and posts array must need!",
+        message: "Category is required",
       });
     }
 
@@ -399,6 +400,7 @@ export const setCategoryTopPosts = async (req, res) => {
       );
 
       if (existingIndex !== -1) {
+        // Set posts to empty array if none provided, or to the provided array
         assets.categoryTopPosts[existingIndex].posts = posts;
       } else {
         assets.categoryTopPosts.push({ category, posts });
@@ -410,6 +412,10 @@ export const setCategoryTopPosts = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: `Top posts updated successfully for category "${category}"`,
+      data: {
+        category,
+        posts: posts, // Return the posts array that was saved (could be empty)
+      },
     });
   } catch (error) {
     console.log(error);
@@ -417,7 +423,7 @@ export const setCategoryTopPosts = async (req, res) => {
   }
 };
 
-export const getCategoryTopPosts = async (req, res) => { 
+export const getCategoryTopPosts = async (req, res) => {
   try {
     const { category } = req.query;
 
@@ -471,7 +477,6 @@ export const getCategoryTopPosts = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
 
 export const setBreakingNews = async (req, res) => {
   try {
